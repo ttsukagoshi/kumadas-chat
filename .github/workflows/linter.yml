@@ -2,10 +2,11 @@
 name: Lint Code Base
 
 on: # yamllint disable-line rule:truthy
-  push: null
-  pull_request: null
+  push:
+    branches: [main]
+  pull_request:
 
-permissions: read-all
+permissions: {}
 
 jobs:
   build:
@@ -39,13 +40,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Super-linter
-        uses: super-linter/super-linter/slim@v6 # x-release-please-version
+        uses: super-linter/super-linter/slim@v8 # x-release-please-version
         env:
           DEFAULT_BRANCH: main
-          JAVASCRIPT_ES_CONFIG_FILE: .eslintrc.yml
+          JAVASCRIPT_ES_CONFIG_FILE: .github/linters/.eslintrc.json
           LINTER_RULES_PATH: /
           VALIDATE_ALL_CODEBASE: true
+          VALIDATE_GITHUB_ACTIONS: false
+          VALIDATE_NATURAL_LANGUAGE: false
           VALIDATE_JAVASCRIPT_STANDARD: false
-          VALIDATE_TYPESCRIPT_STANDARD: false
+          VALIDATE_JSON: false # Disable until Super-Linter supports ESLint v9
+          VALIDATE_JAVASCRIPT_ES: false # Disable until Super-Linter supports ESLint v9
           # To report GitHub Actions status checks
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
