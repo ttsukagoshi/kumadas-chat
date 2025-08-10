@@ -27,6 +27,10 @@ updates:
     target-branch: 'main'
     open-pull-requests-limit: 10
     groups:
+      eslint:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
       typescript-eslint:
         patterns:
           - '@typescript-eslint/*'

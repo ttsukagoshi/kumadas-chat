@@ -1,0 +1,4 @@
+{
+  "pattern": "**/*.js",
+  "ignore": ["**/coverage/**/*", "**/node_modules/**/*", "**/tests/*.js"]
+}
