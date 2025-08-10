@@ -48,7 +48,7 @@ jobs:
           VALIDATE_ALL_CODEBASE: true
           VALIDATE_GITHUB_ACTIONS: false
           VALIDATE_NATURAL_LANGUAGE: false
-          VALIDATE_JAVASCRIPT_STANDARD: false
+          # VALIDATE_JAVASCRIPT_STANDARD: false  # Deprecated
           VALIDATE_JSON: false # Disable until Super-Linter supports ESLint v9
           VALIDATE_JAVASCRIPT_ES: false # Disable until Super-Linter supports ESLint v9
           # To report GitHub Actions status checks
