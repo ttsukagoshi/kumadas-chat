@@ -15,11 +15,19 @@
 // 上記ライセンスは本ツールに係るものです。
 // クマダスの情報は、必ずクマダス利用規約 https://kumadas.net/term を事前に確認・同意の上でご利用ください。
 
-// Gmail label name that Kumadas emails are labeled with
-const KUMADAS_LABEL_NAME = 'クマダス';
+//////////////////////////////////////////////////////
+// 定数 (ユーザが自身の環境に合わせて変更する必要がある) //
+//////////////////////////////////////////////////////
 
-// Kumadas Info object template
+const KUMADAS_LABEL_NAME = 'クマダス'; // クマダスからのメールにつけるGmailラベル名
+const KUMADAS_PROCESSED_LABEL_NAME = 'クマダス_処理済み'; // クマダスからのメールのうち処理済みのものにつけるGmailラベル名
+
+////////////////////////////////////
+// 定数 (ユーザが変更する必要はない) //
+////////////////////////////////////
+
 const KUMADAS_INFO_TEMPLATE = {
+  // Kumadas Info object template
   datetime: new Date(), // 日時
   address: '***', // 住所
   type: '***', // 獣種
@@ -70,7 +78,7 @@ class Helper {
         address: m.groups.address,
         type: m.groups.type,
         quantity: parseInt(m.groups.quantity, 10),
-        situation: m.groups.situation,
+        situation: m.groups.situation.replace(/[\r\n]+/g, ' '), // 「状況」内の改行はスペースに置換しておく
         url: m.groups.url,
         position: {
           lat: parseFloat(m.groups.lat),
@@ -117,7 +125,7 @@ class Helper {
    * Get Kumadas information from a Gmail thread and return the info as an array of JavaScript objects.
    *
    * @param {GoogleAppsScript.Gmail.GmailThread} gmailThread The Gmail thread to extract information from.
-   * @return {Object[]} An array of objects containing the extracted Kumadas information.
+   * @return {Object[]} A flattened array of objects containing the extracted Kumadas information.
    */
   static getKumadasInfoFromThread(gmailThread) {
     // log
@@ -125,7 +133,7 @@ class Helper {
       `[getKumadasInfoFromThread] Getting Kumadas info from thread: "${gmailThread.getFirstMessageSubject()}" (${gmailThread.getId()})`,
     );
     // Initialize an array to hold Kumadas information
-    const kumadasInfos = [];
+    const kumadasInfosPre = [];
     // Get all messages in the thread
     const messages = gmailThread.getMessages();
     messages.forEach((message) => {
@@ -136,9 +144,71 @@ class Helper {
       // Get the body of the message
       const body = message.getPlainBody();
       // Extract Kumadas-specific information from the body
-      kumadasInfos.push(this.convertKumadasMessage2Info(body));
+      const kumadasInfo = this.convertKumadasMessage2Info(body);
+      if (kumadasInfo) {
+        // Add the extracted Kumadas info to the array only when kumadasInfo is not null
+        kumadasInfosPre.push(kumadasInfo);
+      }
     });
+    // The final output should be a flat array of Kumadas information objects
+    const kumadasInfos = kumadasInfosPre.flat();
+    // log
+    console.info(
+      `[getKumadasInfoFromThread] Extracted Kumadas info: ${JSON.stringify(kumadasInfos, null, 2)}`,
+    );
     return kumadasInfos;
+  }
+
+  /**
+   * Calculate the distances between targetPosition and centerPosition
+   * and determine whether the targetPosition is within the specified radius.
+   * Returns true if the targetPosition is within the radius, false otherwise.
+   *
+   * @param {*} targetPosition A JavaScript object with the properties `latitude` and `longitude`
+   * @param {*} centerPosition A JavaScript object with the properties `latitude` and `longitude`
+   * @param {number} radius The radius of the range in kilometers
+   * @returns {boolean} True if the targetPosition is within the radius, false otherwise.
+   */
+  static isWithinRange(targetPosition, centerPosition, radius) {
+    const getDistance = (pos1, pos2) => {
+      const R = 6371; // Radius of the Earth in kilometers
+      const dLat = this.degreesToRadians(pos2.latitude - pos1.latitude);
+      const dLon = this.degreesToRadians(pos2.longitude - pos1.longitude);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(this.degreesToRadians(pos1.latitude)) *
+          Math.cos(this.degreesToRadians(pos2.latitude)) *
+          Math.sin(dLon / 2) *
+          Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c; // Distance in kilometers
+    };
+
+    const distance = getDistance(targetPosition, centerPosition);
+    return distance <= radius;
+  }
+
+  /**
+   * Send a message to Google Chat Space.
+   * @param {string} chatSpaceWebhookUrl The webhook URL of the Google Chat Space.
+   * @param {string} messageBody The message body to send.
+   * @see https://developers.google.com/workspace/chat/quickstart/webhooks
+   */
+  static sendToChatSpace(chatSpaceWebhookUrl, messageBody) {
+    // log
+    console.info(
+      `[sendToChatSpace] Sending message to Google Chat Space: ${messageBody}`,
+    );
+    // Send the message to Google Chat Space
+    UrlFetchApp.fetch(chatSpaceWebhookUrl, {
+      method: 'POST',
+      contentType: 'application/json; charset=UTF-8',
+      payload: JSON.stringify({
+        text: messageBody,
+      }),
+    });
+    // log
+    console.info('[sendToChatSpace] Message sent to Google Chat Space');
   }
 }
 
@@ -146,17 +216,25 @@ class Helper {
  * Main function to execute the script.
  */
 function main() {
-  // Initialize an array to hold Kumadas information
-  const kumadasInfoArr = [];
+  // Get user-specified values in Script Properties
+  const sp = PropertiesService.getScriptProperties().getProperties();
   // Get Gmail threads with the specified label
   const targetThreads = Helper.getGmailThreadsWithLabel(KUMADAS_LABEL_NAME);
+  if (!targetThreads) {
+    console.info(`No threads found with label: ${KUMADAS_LABEL_NAME}`);
+    return;
+  }
   targetThreads.forEach((thread) => {
     // From each thread, get its messages.
     // Extract Kumadas information from the respective messages and add it to kumadasInfoArr
-    const threadKumadasInfo = [...Helper.getKumadasInfoFromThread(thread)];
-    kumadasInfoArr.push(...threadKumadasInfo);
+    const threadKumadasInfo = Helper.getKumadasInfoFromThread(thread);
+    if (threadKumadasInfo) {
+      // Filter the values that are within the range
+      // of the user-specified center position and radius
+      // Send chat message to the designated chat space
+      // Remove Gmail label KUMADAS_LABEL_NAME and relabel with KUMADAS_PROCESSED_LABEL_NAME
+    }
   });
-  console.log(JSON.stringify(kumadasInfoArr.flat(), null, 2));
 }
 
 if (typeof module !== 'undefined' && module.exports) {
