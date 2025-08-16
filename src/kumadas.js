@@ -36,8 +36,8 @@ const KUMADAS_INFO_TEMPLATE = {
   url: '***', // クマダスURL https://kumadas.net/?lat=***&lng=***&radius=30
   position: {
     // 緯度経度のデフォルト値は秋田県河辺へそ公園
-    lat: 39.6977777778,
-    lng: 140.3594444444,
+    latitude: 39.6977777778,
+    longitude: 140.3594444444,
   },
 };
 
@@ -62,7 +62,7 @@ class Helper {
     );
     // Regular expression to extract Kumadas text
     const kumadasRegex =
-      /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2}) (?<hour>\d{2}):(?<minutes>\d{2})\r?\n住所：(?<address>[^\n]+?)\r?\n獣種：(?<type>[^\n]+?)\r?\n頭数：(?<quantity>\d+?)\r?\n状況：(?<situation>[\s\S]+?)\r?\n(?<url>https:\/\/kumadas\.net\/\?lat=(?<lat>[\d.]+?)&lng=(?<lng>[\d.]+?)&radius=\d+)/g;
+      /(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2}) (?<hour>\d{2}):(?<minutes>\d{2})\r?\n住所：(?<address>[^\n]+?)\r?\n獣種：(?<type>[^\n]+?)\r?\n頭数：(?<quantity>\d+?)\r?\n状況：(?<situation>[\s\S]+?)\r?\n(?<url>https:\/\/kumadas\.net\/\?lat=(?<latitude>[\d.]+?)&lng=(?<longitude>[\d.]+?)&radius=\d+)/g;
     const matchArr = [...messageBody.matchAll(kumadasRegex)];
     if (matchArr.length === 0) {
       // If no match is found, log a warning and return null
@@ -73,7 +73,7 @@ class Helper {
       return {
         ...KUMADAS_INFO_TEMPLATE,
         datetime: new Date(
-          `${m.groups.year}-${m.groups.month}-${m.groups.day}T${m.groups.hour}:${m.groups.minutes}:09Z`,
+          `${m.groups.year}-${m.groups.month}-${m.groups.day}T${m.groups.hour}:${m.groups.minutes}:00Z`,
         ),
         address: m.groups.address,
         type: m.groups.type,
@@ -81,8 +81,8 @@ class Helper {
         situation: m.groups.situation.replace(/[\r\n]+/g, ' '), // 「状況」内の改行はスペースに置換しておく
         url: m.groups.url,
         position: {
-          lat: parseFloat(m.groups.lat),
-          lng: parseFloat(m.groups.lng),
+          latitude: parseFloat(m.groups.latitude),
+          longitude: parseFloat(m.groups.longitude),
         },
       };
     });
@@ -94,31 +94,70 @@ class Helper {
   }
 
   /**
+   * Convert degrees to radians.
+   * @param {number} degrees The angle in degrees.
+   * @returns {number} The angle in radians.
+   */
+  static degreesToRadians(degrees) {
+    return degrees * (Math.PI / 180);
+  }
+
+  /**
    * Google Apps Script to get the user's Gmail thread with a specific label.
    *
-   * @param {string} labelName The target label name.
+   * @param {GoogleAppsScript.Gmail.GmailLabel} targetLabel The target label name.
    * @return {GoogleAppsScript.Gmail.GmailThread[]} An array of Gmail threads that match the label.
    */
-  static getGmailThreadsWithLabel(labelName) {
+  static getGmailThreadsWithLabel(targetLabel) {
+    // label name
+    const targetLabelName = targetLabel.getName();
     // log
     console.info(
-      `[getGmailThreadsWithLabel] Getting threads with label: ${labelName}`,
+      `[getGmailThreadsWithLabel] Getting threads with label: ${targetLabelName}`,
     );
-    const targetLabel = GmailApp.getUserLabelByName(labelName);
-    if (!targetLabel) {
-      throw new Error(`Label not found: ${labelName}`);
-    }
-    // const targetThreads = GmailApp.search(`label:${targetLabel.getName()}`);
-    const targetThreads = GmailApp.search(
-      `label:${targetLabel.getName()}`,
-      0,
-      10,
-    );
+    const targetThreads = GmailApp.search(`label:${targetLabelName}`);
     // log
     console.info(
-      `[getGmailThreadsWithLabel] Found ${targetThreads.length} threads with label: ${labelName}`,
+      `[getGmailThreadsWithLabel] Found ${targetThreads.length} threads with label: ${targetLabelName}`,
     );
     return targetThreads;
+  }
+
+  /**
+   * Calculate the great-circle distance between two points on the Earth
+   * based on the haversine formula and returns the distance in kilometers.
+   * The parameters `position1` and `position2` are JavaScript objects with `latitude` and `longitude` properties.
+   *
+   * @param {*} position1 The JavaScript object for the first position.
+   * @param {*} position2 The JavaScript object for the second position.
+   * @returns {number} The great-circle distance between the two positions in kilometers.
+   * @see https://en.wikipedia.org/wiki/Haversine_formula for the formula
+   * @see https://eco.mtk.nao.ac.jp/koyomi/wiki/CFC7C0B12FC8BEB7C2.html for the earth radius
+   */
+  static getGreatCircleDistance(position1, position2) {
+    // log
+    console.info(
+      `[getGreatCircleDistance] Calculating distance between positions:\n` +
+        ` position1: ${JSON.stringify(position1)}\n` +
+        ` position2: ${JSON.stringify(position2)}`,
+    );
+    const earth_radius = 6378.137; // 地球の赤道半径 (km)
+    const lat1 = this.degreesToRadians(position1.latitude);
+    const lat2 = this.degreesToRadians(position2.latitude);
+    const dLat = this.degreesToRadians(position2.latitude - position1.latitude);
+    const dLon = this.degreesToRadians(
+      position2.longitude - position1.longitude,
+    );
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = earth_radius * c; // Distance in kilometers
+    // log
+    console.info(
+      `[getGreatCircleDistance] Distance calculated: ${distance} km`,
+    );
+    return distance;
   }
 
   /**
@@ -170,22 +209,76 @@ class Helper {
    * @returns {boolean} True if the targetPosition is within the radius, false otherwise.
    */
   static isWithinRange(targetPosition, centerPosition, radius) {
-    const getDistance = (pos1, pos2) => {
-      const R = 6371; // Radius of the Earth in kilometers
-      const dLat = this.degreesToRadians(pos2.latitude - pos1.latitude);
-      const dLon = this.degreesToRadians(pos2.longitude - pos1.longitude);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(this.degreesToRadians(pos1.latitude)) *
-          Math.cos(this.degreesToRadians(pos2.latitude)) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c; // Distance in kilometers
-    };
+    // log
+    console.info(
+      `[isWithinRange] Checking if targetPosition is within range.\n` +
+        ` targetPosition: ${JSON.stringify(targetPosition)}` +
+        ` centerPosition: ${JSON.stringify(centerPosition)}` +
+        ` radius: ${radius}`,
+    );
+    const distance = this.getGreatCircleDistance(
+      targetPosition,
+      centerPosition,
+    );
+    const isWithinRange = distance <= radius;
+    // log
+    console.info(
+      `[isWithinRange] Distance ${distance} km is ${isWithinRange ? 'within' : 'out of'} range`,
+    );
+    return isWithinRange;
+  }
 
-    const distance = getDistance(targetPosition, centerPosition);
-    return distance <= radius;
+  /**
+   * Convert Kumadas information retrieved by this.getKumadasInfoFromThread into a text format
+   * for sending to Google Chat.
+   *
+   * @param {object[]} kumadasInfos The Kumadas information object.
+   * @returns {string} The formatted text for Google Chat.
+   */
+  static kumadasInfo2Text(kumadasInfos) {
+    // log
+    console.info(
+      `[kumadasInfo2Text] Converting Kumadas info to text format: ${JSON.stringify(kumadasInfos, null, 2)}`,
+    );
+
+    const returnMessage = kumadasInfos
+      .map((info) => {
+        // Convert datetime into text in `yyyy-MM-dd HH:mm:ss` format
+        return (
+          `日時: ${info.datetime.toISOString().replace('T', ' ').substring(0, 19)}\n` +
+          `住所: ${info.address}\n` +
+          `獣種: ${info.type}\n` +
+          `頭数: ${info.quantity}\n` +
+          `状況: ${info.situation}\n` +
+          `URL: ${info.url}`
+        );
+      })
+      .join('\n\n');
+
+    // log
+    console.info(`[kumadasInfo2Text] Converted text: ${returnMessage}`);
+    return returnMessage;
+  }
+
+  /**
+   * Relabel a Gmail thread by removing an old label and adding a new label.
+   * @param {GoogleAppsScript.Gmail.GmailThread} thread The Gmail thread to relabel.
+   * @param {GoogleAppsScript.Gmail.GmailLabel} oldLabel The old label to remove.
+   * @param {GoogleAppsScript.Gmail.GmailLabel} newLabel The new label to add.
+   */
+  static relabelGmailThread(thread, oldLabel, newLabel) {
+    // log
+    console.info(
+      `[relabelGmailThread] Relabeling thread: ${thread.getId()}\n` +
+        ` oldLabel: ${oldLabel.getName()}\n` +
+        ` newLabel: ${newLabel.getName()}`,
+    );
+    // Remove the old label
+    thread.removeLabel(oldLabel);
+    // Add the new label
+    thread.addLabel(newLabel);
+    // log
+    console.info(`[relabelGmailThread] Thread relabeled: ${thread.getId()}`);
   }
 
   /**
@@ -216,10 +309,38 @@ class Helper {
  * Main function to execute the script.
  */
 function main() {
+  // log
+  console.info(`[main] Starting main function`);
   // Get user-specified values in Script Properties
   const sp = PropertiesService.getScriptProperties().getProperties();
+  const centerPosition = {
+    // Center position
+    latitude:
+      parseFloat(sp.centerLatitude) || KUMADAS_INFO_TEMPLATE.position.latitude,
+    longitude:
+      parseFloat(sp.centerLongitude) ||
+      KUMADAS_INFO_TEMPLATE.position.longitude,
+  };
+  // The radius in kilometers to determine whether a Kumadas info is within range
+  const radius = parseFloat(sp.radiusKm) || 30; // Default radius is 30 km
+  // Google Chat Space webhook URL
+  const webhookUrl = sp.chatSpaceWebhookUrl;
+
+  // Get the relevant Gmail label objects
+  const targetLabel = GmailApp.getUserLabelByName(KUMADAS_LABEL_NAME);
+  const processedLabel = GmailApp.getUserLabelByName(
+    KUMADAS_PROCESSED_LABEL_NAME,
+  );
+  // Check the labels to see if they exist; if they don't, throw an error
+  if (!targetLabel) {
+    throw new Error(`Label not found: ${KUMADAS_LABEL_NAME}`);
+  }
+  if (!processedLabel) {
+    throw new Error(`Label not found: ${KUMADAS_PROCESSED_LABEL_NAME}`);
+  }
+
   // Get Gmail threads with the specified label
-  const targetThreads = Helper.getGmailThreadsWithLabel(KUMADAS_LABEL_NAME);
+  const targetThreads = Helper.getGmailThreadsWithLabel(targetLabel);
   if (!targetThreads) {
     console.info(`No threads found with label: ${KUMADAS_LABEL_NAME}`);
     return;
@@ -231,10 +352,26 @@ function main() {
     if (threadKumadasInfo) {
       // Filter the values that are within the range
       // of the user-specified center position and radius
-      // Send chat message to the designated chat space
+      const filteredKumadasInfo = threadKumadasInfo.filter((info) =>
+        Helper.isWithinRange(info.position, centerPosition, radius),
+      );
+      if (filteredKumadasInfo.length === 0) {
+        console.info(
+          `No Kumadas info found within range for thread: ${thread.getId()}`,
+        );
+      } else {
+        // Send chat message to the designated chat space
+        const messageBody =
+          '近隣でクマダス情報が発表されました：\n\n' +
+          Helper.kumadasInfo2Text(filteredKumadasInfo);
+        Helper.sendToChatSpace(webhookUrl, messageBody);
+      }
       // Remove Gmail label KUMADAS_LABEL_NAME and relabel with KUMADAS_PROCESSED_LABEL_NAME
+      Helper.relabelGmailThread(thread, targetLabel, processedLabel);
     }
   });
+  // log
+  console.info(`[main] Finished processing threads`);
 }
 
 if (typeof module !== 'undefined' && module.exports) {
