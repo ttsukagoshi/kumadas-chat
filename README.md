@@ -58,8 +58,10 @@
 
 他方で、秋田県の他の全ての地域同様に、クマの出没はキャンパス周辺でも発生している（下図）
 
-![Tableau Publicに掲載された、AIU近辺でのクマダス情報可視化（ツキノワグマ）のスクリーンショット](./assets/aiu-6km-viz.png)  
-▲[秋田県オープンデータカタログサイト](https://opendata.pref.akita.lg.jp/)でダウンロードした「[【秋田県】ツキノワグマ等情報マップシステム『クマダス』データ（20250430時点）](https://ckan.pref.akita.lg.jp/dataset/050008_shizenhogoka_003)」から、`獣種`が`ツキノワグマ`の情報を抽出して作成。Tableau Publicのウェブページ（ログイン不要）からは、AIU周辺以外の出没情報も含めて閲覧できる: [https://public.tableau.com/app/profile/taro.tsukagoshi/viz/\_17553189072090/AIU](https://public.tableau.com/app/profile/taro.tsukagoshi/viz/_17553189072090/AIU)
+<figure>
+  <img src="./assets/aiu-6km-viz.png" alt="Tableau Publicに掲載された、AIU近辺でのクマダス情報可視化（ツキノワグマ）のスクリーンショット" />
+  <figcaption><a href="https://opendata.pref.akita.lg.jp/">秋田県オープンデータカタログサイト</a>でダウンロードした「<a href="https://ckan.pref.akita.lg.jp/dataset/050008_shizenhogoka_003">【秋田県】ツキノワグマ等情報マップシステム『クマダス』データ（20250430時点）</a>」から、`獣種`が`ツキノワグマ`の情報を抽出して作成。<a href="https://public.tableau.com/app/profile/taro.tsukagoshi/viz/_17553189072090/AIU">Tableau Publicのウェブページ</a>（ログイン不要）からは、AIU周辺以外の出没情報も含めて閲覧できる。</figcaption>
+</figure>
 
 地図上では、AIUから周辺の出没情報のうち、半径5km以内のものを黄色の点で、半径6km以内のものを赤色の点で、それぞれ示している[^12]。半径6kmというのは、AIUを起点に、徒歩・自転車での行動圏内の目安となる秋田市御所野・河辺（和田駅周辺）・雄和中心部および秋田空港が一円に収まる範囲となっているが、先述のように、クマダスのメール配信は、任意の地点周辺5km以上の距離についてはサポートしていない。
 
