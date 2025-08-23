@@ -139,6 +139,8 @@ Google Drive上の新規作成から、Google Apps Scriptファイルを作成�
 > [!TIP]
 > `トリガーのタイプ` や `時間の間隔` は、必要に応じて変更すればいい。ここはつまり、クマダスの配信メールが新規に届いているかどうかを確認する頻度。最短は `1分おき` だが、[Google Apps Scriptの実行頻度等にも制限がある](https://developers.google.com/apps-script/guides/services/quotas)ことに加えて、1分おきではエラーが起きやすいため、オススメはしない。
 
+以上で設定は完了。
+
 ## 権利等
 
 〜〜〜
