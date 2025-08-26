@@ -26,6 +26,7 @@ jobs:
           # super-linter needs the full git history to get the
           # list of files that changed across commits
           fetch-depth: 0
+          persist-credentials: false
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
@@ -40,7 +41,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Super-linter
-        uses: super-linter/super-linter/slim@v8.1.0 # x-release-please-version
+        uses: super-linter/super-linter/slim@ffde3b2b33b745cb612d787f669ef9442b1339a6 # SHA for v8.1.0
         env:
           DEFAULT_BRANCH: main
           JAVASCRIPT_ES_CONFIG_FILE: .github/linters/.eslintrc.json
