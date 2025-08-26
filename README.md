@@ -84,6 +84,9 @@ Google Workspace利用者向けの本ソリューションは、Gmailで受信�
 - Google Workspace管理者が、[ユーザにChatでWebhookを追加して使用できるように設定](https://support.google.com/a/answer/7651360)している。
 - クマダス情報を転送したいGoogle Chatスペースを作成し、そのスペースの[Webhook URLを取得](https://developers.google.com/workspace/chat/quickstart/webhooks#create-webhook)している。
 
+> [!WARNING]
+> Google ChatスペースのWebhook URLは他者に知られないように注意すること。Webhook URLを知っていれば、組織外の人でもそのスペースにメッセージを投稿できてしまう。スクリプトプロパティの値は、そのスクリプトファイルにアクセスできるユーザであれば誰でも確認できる。
+
 #### クマダスのメール配信設定
 
 クマダスの[利用規約](https://kumadas.net/term)に同意の上、上記Google Workspaceアカウントでユーザ登録を行い、**秋田県内全域**のクマ出没情報をメール配信で受け取る設定を完了している。
@@ -115,13 +118,10 @@ Google Drive上の新規作成から、Google Apps Scriptファイルを作成�
 - `chatSpaceWebhookUrl`: Google ChatスペースのWebhook URL
 - `radiusKm`: 半径 (km) (例: 7.5kmなら `7.5` と入力)
 
-![スクリプトプロパティの設定画面のスクリーンショット](./assets/script-properties.png)
-
-> [!WARNING]
-> Google ChatスペースのWebhook URLは他者に知られないように注意すること。Webhook URLを知っていれば、組織外の人でもそのスペースにメッセージを投稿できてしまう。スクリプトプロパティの値は、そのスクリプトファイルにアクセスできるユーザであれば誰でも確認できる。
-
 > [!TIP]
 > 特定地点の緯度経度は、例えばGoogleマップであれば、地図上でその地点を右クリックすると表示され、緯度経度をクリックするとコピーすることができる。
+
+![スクリプトプロパティの設定画面のスクリーンショット](./assets/script-properties.png)
 
 ### 4. スクリプトの実行トリガーを設定
 
