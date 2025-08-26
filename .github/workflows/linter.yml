@@ -29,7 +29,7 @@ jobs:
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Cache node modules
         uses: actions/cache@v4
         with:
@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Super-linter
-        uses: super-linter/super-linter/slim@v8 # x-release-please-version
+        uses: super-linter/super-linter/slim@v8.1.0 # x-release-please-version
         env:
           DEFAULT_BRANCH: main
           JAVASCRIPT_ES_CONFIG_FILE: .github/linters/.eslintrc.json
