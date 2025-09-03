@@ -85,7 +85,7 @@ Google Workspace利用者向けの本ソリューションは、Gmailで受信�
 - Google Workspace管理者が、[ユーザにChatでWebhookを追加して使用できるように設定](https://support.google.com/a/answer/7651360)している。
 - クマダス情報を転送したいGoogle Chatスペースを作成し、そのスペースの[Webhook URLを取得](https://developers.google.com/workspace/chat/quickstart/webhooks#create-webhook)している。
 
-> [!WARNING]
+> [!CAUTION]
 > Google ChatスペースのWebhook URLは他者に知られないように注意すること。Webhook URLを知っていれば、組織外の人でもそのスペースにメッセージを投稿できてしまう。スクリプトプロパティの値は、そのスクリプトファイルにアクセスできるユーザであれば誰でも確認できる。
 
 #### クマダスのメール配信設定
