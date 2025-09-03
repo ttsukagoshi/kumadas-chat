@@ -1,6 +1,6 @@
 {
   "name": "kumadas-chat",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "秋田県ツキノワグマ等情報マップシステム【クマダス】のメール通知をもとに、緯度・経度で指定した場所から任意の半径以内でのツキノワグマ目撃情報を、Google Chatスペースに転送するためのGoogle Apps Script",
   "engines": {
     "node": ">=20.19.4 || >=22.18.0 || >= 24.5.0"
